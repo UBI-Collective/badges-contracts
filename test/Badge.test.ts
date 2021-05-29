@@ -9,8 +9,8 @@ chai.use(solidity)
 chai.use(chaiAsPromised)
 const { expect, assert } = chai
 
-const numClonesAllowed = 100
-const numClonesRequested = 50
+const numClonesAllowed = 30
+const numClonesRequested = 15
 const tokenURI = "http://sticlalux.ro/bedge.json"
 
 
@@ -65,7 +65,51 @@ describe("Badge contract", () => {
       const badgeId = (await badge.getLatestBadgeId()).toNumber()
       const badgeUri = await badge.tokenURI(badgeId)
 
-      assert.equal(tokenURI, badgeUri) 
+      assert.equal(tokenURI, badgeUri)
+    })
+  })
+
+  describe("Clones a badge", async () => {
+    it("Badge cloned", async () => {
+
+      // mint badge first
+      await badge.mint(contractOwner, numClonesRequested, tokenURI, { from: contractOwner })
+
+      // expect two events:
+      // 1. OriginalBadgeUpdated(originalTokenId, numClonesInWild)
+      // 2. BadgeCloned(clonedTokenId, cloneFromId, tokenUri, owner)
+      expect(await badge.clone(contractOwner, 1, numClonesRequested))
+        .to.emit(badge, "OriginalBadgeUpdated")
+          .withArgs(1, numClonesRequested)
+        .to.emit(badge, "BadgeCloned")
+          .withArgs(2, 1, tokenURI, contractOwner)
+    })
+  })
+
+  describe("Badge has a owner", async () => {
+    it("Badge is owned", async () => {
+      await badge.mint(contractOwner, numClonesAllowed, tokenURI, { from: contractOwner })
+      const badgeId = (await badge.getLatestBadgeId()).toNumber()
+      const actualBadgeOwner = await badge.ownerOf(badgeId)
+
+      assert.equal(actualBadgeOwner, contractOwner)
+    })
+  })
+
+  describe("Transfers badge", async () => {
+    it("Badge transferred", async () => {
+
+      // mint badge first
+      await badge.mint(contractOwner, numClonesAllowed, tokenURI, { from: contractOwner })
+
+      const receiver = accounts[1]
+      const badgeId = (await badge.getLatestBadgeId()).toNumber()
+
+      // transfer badge
+      await badge.transferBadge(contractOwner, receiver, badgeId)
+      const newOwner = await badge.ownerOf(badgeId)
+
+      assert.equal(newOwner, receiver)
     })
   })
 });

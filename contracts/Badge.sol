@@ -136,7 +136,7 @@ contract Badge is ERC721URIStorage, Ownable {
     {
         _setTokenURI(_tokenId, _tokenURI);
     }
-    
+
     function getBadgeById(uint256 _tokenId)
         public
         view
@@ -165,4 +165,11 @@ contract Badge is ERC721URIStorage, Ownable {
         isMintable = _isMintable;
     }
 
+    function transferBadge(
+        address _from,
+        address _to,
+        uint256 _tokenId
+    ) public onlyOwner {
+        safeTransferFrom(_from, _to, _tokenId);
+    }
 }
